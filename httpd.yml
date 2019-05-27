@@ -1,0 +1,43 @@
+---
+ - name: Installing httpd on centos and port change 80 to 90
+   hosts: all
+   become: yes
+   tasks:
+    - name: Installing httpd via yum
+      yum:
+       name: "{{ item }}"
+       state: latest
+      with_items:
+       - httpd
+       - policycoreutils-python
+     
+    - name: Ensure the default Apache port is 90
+      lineinfile:
+       path: /etc/httpd/conf/httpd.conf
+       regexp: '^Listen '
+       insertafter: '^#Listen '
+       line: Listen 90
+
+    - name: Allow Apache to listen on tcp port 90
+      seport:
+       ports: 90
+       proto: tcp
+       setype: http_port_t
+       state: present
+    
+    - name: Copy html file to node
+      copy:
+       src: /opt/index.html
+       dest: /var/www/html/index.html
+      notify:
+       - restart httpd
+   handlers:   
+    - name: restart httpd
+      service:
+       name: httpd
+       state: restarted
+  
+
+
+
+
